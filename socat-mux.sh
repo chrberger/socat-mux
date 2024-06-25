@@ -1,6 +1,8 @@
 #! /usr/bin/env bash
 # Copyright Gerhard Rieger and contributors (see file CHANGES)
 # Published under the GNU General Public License V.2, see file COPYING
+#
+# Fixes contributed by Christian Berger.
 
 # Shell script to build a many-to-one, one-to-all communication
 # It starts two Socat instances that communicate via IPv4 broadcast,
@@ -70,12 +72,16 @@ case "$0" in
     */*) SOCAT=${0%/*}/socat ;;
     *) SOCAT=socat ;;
 esac
+if [ -z "$SOCAT" ]; then
+    SOCAT=socat
+fi
 
 PORT1=$($SOCAT -d -d -T 0.000001 UDP4-RECV:0 /dev/null 2>&1 |grep bound |sed 's/.*:\([1-9][0-9]*\)$/\1/')
 PORT2=$($SOCAT -d -d -T 0.000001 UDP4-RECV:0 /dev/null 2>&1 |grep bound |sed 's/.*:\([1-9][0-9]*\)$/\1/')
 if [ -z "$PORT1" -o -z "$PORT2" ]; then
-    echo "$0: Failed to determine free UDP ports" >&2
-    exit 1
+    echo "$0: Failed to determine free UDP ports, using 56001 and 56002" >&2
+    PORT1=56001
+    PORT2=56002
 fi
 if [ "$PORT1" = "$PORT2" ]; then 	# seen on etch
     PORT2=$((PORT1+1))
@@ -112,4 +118,3 @@ $SOCAT -lp muxlst $OPTS \
 pid2=$!
 
 wait
-#wait -f
